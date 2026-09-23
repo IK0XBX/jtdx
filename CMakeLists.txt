@@ -676,10 +676,10 @@ set_property (SOURCE ${all_C_and_CXXSRCS} APPEND PROPERTY OBJECT_DEPENDS wsjtx_c
 
 if (WIN32)
   # generate the OmniRig COM interface source
-  find_program (DUMPCPP dumpcpp)
-  if (DUMPCPP-NOTFOUND)
+  find_program (DUMPCPP NAMES dumpcpp dumpcpp-qt5)
+  if (NOT DUMPCPP)
     message (FATAL_ERROR "dumpcpp tool not found")
-  endif (DUMPCPP-NOTFOUND)
+  endif ()
   set (OMNIRIG_TYPELIB "" CACHE FILEPATH "Optional path to OmniRig.tlb for headless Windows builds")
   if (OMNIRIG_TYPELIB)
     if (NOT EXISTS "${OMNIRIG_TYPELIB}")
