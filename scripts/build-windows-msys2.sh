@@ -7,6 +7,7 @@ build_root="${project_root}/build-windows"
 dist_root="${project_root}/dist"
 dependency_root="${RUNNER_TEMP:-${project_root}/.windows-dependencies}"
 hamlib_source="${dependency_root}/jtdxhamlib"
+omnirig_typelib="${dependency_root}/OmniRig.tlb"
 
 : "${MINGW_PREFIX:?Run this script from an MSYS2 MINGW64 shell}"
 
@@ -32,10 +33,19 @@ make -j2
 make install
 popd
 
+curl --fail --location \
+  --output "${omnirig_typelib}" \
+  https://raw.githubusercontent.com/VE3NEA/OmniRig/e2f5d9ba7f0d7a3563e49fa2f3de417bfc8c749f/OmniRig.tlb
+if [[ "$(git hash-object "${omnirig_typelib}")" != "a3af0fc1e43ed57387d50d171ad9588f7429569a" ]]; then
+  echo "OmniRig.tlb integrity check failed" >&2
+  exit 1
+fi
+
 cmake -S "${project_root}" -B "${build_root}" -G Ninja \
   -D CMAKE_BUILD_TYPE=Release \
   -D CMAKE_INSTALL_PREFIX="${build_root}/stage" \
   -D CMAKE_PREFIX_PATH="${MINGW_PREFIX}" \
+  -D OMNIRIG_TYPELIB="${omnirig_typelib}" \
   -D WSJT_SKIP_MANPAGES=ON \
   -D WSJT_GENERATE_DOCS=OFF
 

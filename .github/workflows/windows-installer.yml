@@ -30,6 +30,7 @@ jobs:
             base-devel
             autoconf
             automake
+            curl
             git
             libtool
             pkgconf

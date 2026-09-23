@@ -680,17 +680,25 @@ if (WIN32)
   if (DUMPCPP-NOTFOUND)
     message (FATAL_ERROR "dumpcpp tool not found")
   endif (DUMPCPP-NOTFOUND)
-  execute_process (
-    COMMAND ${DUMPCPP} -getfile {4FE359C5-A58F-459D-BE95-CA559FB4F270}
-    OUTPUT_VARIABLE AXSERVER
-    OUTPUT_STRIP_TRAILING_WHITESPACE
-    )
-  string (STRIP "${AXSERVER}" AXSERVER)
-  if (NOT AXSERVER)
-    message (FATAL_ERROR "You need to install OmniRig on this computer")
-  endif (NOT AXSERVER)
-  string (REPLACE "\"" "" AXSERVER ${AXSERVER})
-  file (TO_CMAKE_PATH ${AXSERVER} AXSERVERSRCS)
+  set (OMNIRIG_TYPELIB "" CACHE FILEPATH "Optional path to OmniRig.tlb for headless Windows builds")
+  if (OMNIRIG_TYPELIB)
+    if (NOT EXISTS "${OMNIRIG_TYPELIB}")
+      message (FATAL_ERROR "OmniRig type library not found: ${OMNIRIG_TYPELIB}")
+    endif ()
+    file (TO_CMAKE_PATH "${OMNIRIG_TYPELIB}" AXSERVERSRCS)
+  else ()
+    execute_process (
+      COMMAND ${DUMPCPP} -getfile {4FE359C5-A58F-459D-BE95-CA559FB4F270}
+      OUTPUT_VARIABLE AXSERVER
+      OUTPUT_STRIP_TRAILING_WHITESPACE
+      )
+    string (STRIP "${AXSERVER}" AXSERVER)
+    if (NOT AXSERVER)
+      message (FATAL_ERROR "You need to install OmniRig on this computer or set OMNIRIG_TYPELIB")
+    endif (NOT AXSERVER)
+    string (REPLACE "\"" "" AXSERVER ${AXSERVER})
+    file (TO_CMAKE_PATH ${AXSERVER} AXSERVERSRCS)
+  endif ()
 endif (WIN32)
 
 
