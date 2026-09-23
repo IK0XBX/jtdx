@@ -28,7 +28,11 @@ jobs:
           update: true
           install: >-
             base-devel
+            autoconf
+            automake
             git
+            libtool
+            pkgconf
             mingw-w64-x86_64-toolchain
             mingw-w64-x86_64-gcc-fortran
             mingw-w64-x86_64-cmake
