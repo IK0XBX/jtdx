@@ -2243,10 +2243,10 @@ void Configuration::impl::read_settings ()
   aggressive_ = settings_->value ("Aggressive", 1).toInt (); if(!(aggressive_>=1 && aggressive_<=5)) aggressive_=1;
   harmonicsdepth_ = settings_->value ("HarmonicsDecodingDepth", 0).toInt (); if(!(harmonicsdepth_>=0 && harmonicsdepth_<=4)) harmonicsdepth_=0;
   ntopfreq65_ = settings_->value ("TopFrequencyJT65", 2700).toInt (); if(!(ntopfreq65_>=100 && ntopfreq65_<=5000)) ntopfreq65_=2700;
-  nAnswerCQCounter_ = settings_->value ("SeqAnswerCQCounterValue", 2).toInt (); if(!(nAnswerCQCounter_>=1 && nAnswerCQCounter_<=5)) nAnswerCQCounter_=2;
-  nAnswerInCallCounter_ = settings_->value ("SeqAnswerInCallCounterValue", 3).toInt (); if(!(nAnswerInCallCounter_>=1 && nAnswerInCallCounter_<=5)) nAnswerInCallCounter_=2;
-  nSentRReportCounter_ = settings_->value ("SeqSentRReportCounterValue", 5).toInt (); if(!(nSentRReportCounter_>=1 && nSentRReportCounter_<=5)) nSentRReportCounter_=3;
-  nSentRR7373Counter_ = settings_->value ("SeqSentRR7373CounterValue", 4).toInt (); if(!(nSentRR7373Counter_>=1 && nSentRR7373Counter_<=5)) nSentRR7373Counter_=2;
+  nAnswerCQCounter_ = settings_->value ("SeqAnswerCQCounterValue", 2).toInt (); if(!(nAnswerCQCounter_>=1 && nAnswerCQCounter_<=30)) nAnswerCQCounter_=2;
+  nAnswerInCallCounter_ = settings_->value ("SeqAnswerInCallCounterValue", 3).toInt (); if(!(nAnswerInCallCounter_>=1 && nAnswerInCallCounter_<=30)) nAnswerInCallCounter_=2;
+  nSentRReportCounter_ = settings_->value ("SeqSentRReportCounterValue", 5).toInt (); if(!(nSentRReportCounter_>=1 && nSentRReportCounter_<=30)) nSentRReportCounter_=3;
+  nSentRR7373Counter_ = settings_->value ("SeqSentRR7373CounterValue", 4).toInt (); if(!(nSentRR7373Counter_>=1 && nSentRR7373Counter_<=30)) nSentRR7373Counter_=2;
   nsingdecatt_ = settings_->value ("nSingleDecodeAttempts", 1).toInt (); if(!(nsingdecatt_>=1 && nsingdecatt_<=3)) nsingdecatt_=1;
   fmaskact_ = settings_->value ("FMaskDecoding", false).toBool ();
   answerCQCount_ = settings_->value ("SeqAnswerCQCount", false).toBool ();

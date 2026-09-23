@@ -119,7 +119,9 @@ int main(int argc, char *argv[])
                                    // that GUI has correct l18n
 
       // Override programs executable basename as application name.
-      a.setApplicationName ("JTDX");
+      // Keep the custom build configuration, lock and writable data separate
+      // from an official JTDX installation on the same computer.
+      a.setApplicationName ("JTDX IK0XBX");
       a.setApplicationVersion (version ());
   if (version().replace("_32A","").indexOf("_") > 1) {
     #include <QDate>

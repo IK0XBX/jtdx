@@ -299,6 +299,7 @@ private slots:
   void on_freeTextMsg_currentTextChanged (QString const&);
   void on_freeTextMsg_currentIndexChanged(int index);
   void on_rptSpinBox_valueChanged(int n);
+  void on_fixedReportComboBox_currentIndexChanged(int index);
   void killFile();
   void set_language(QString const& lang);
   void on_tuneButton_clicked (bool);
@@ -677,6 +678,7 @@ private:
   QStringList m_wantedCountryList;
   QStringList m_wantedPrefixList;
   QStringList m_wantedGridList;
+  QSet<QString> m_persistentWantedLoggedCalls;
   QString m_appDir;
   QString m_palette;
 //  QString m_dateTime;
@@ -744,6 +746,8 @@ private:
   void msgBox(QString t);
   void genCQMsg();
   void genStdMsgs(QString rpt);
+  QString selectedTxReport(QString const& decodedReport) const;
+  bool isPersistentWanted(QString const& callsign) const;
   void clearDX (QString reason);
   void clearDXfields (QString reason);
   void logClearDX ();

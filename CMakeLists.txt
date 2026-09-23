@@ -49,7 +49,7 @@ message (STATUS "Building ${CMAKE_PROJECT_NAME}-${wsjtx_VERSION}")
 #
 # project information
 #
-set (PROJECT_NAME "JTDX")
+set (PROJECT_NAME "JTDX IK0XBX")
 if (WIN32)
   set (PROJECT_VENDOR "Igor Chernikov, UA3DJY and Arvo Jarve, ES1JA")
   set (PROJECT_CONTACT "Igor Chernikov <c_igor@inbox.ru>, Arvo Jarve <arvo.jarve@eesti.ee>")
@@ -1540,7 +1540,7 @@ endif (NOT is_debug_build)
 #
 set (CPACK_PACKAGE_DESCRIPTION_FILE "${CMAKE_SOURCE_DIR}/package_description.txt")
 set (CPACK_MONOLITHIC_INSTALL 1)
-set (CPACK_PACKAGE_NAME "${CMAKE_PROJECT_NAME}")
+set (CPACK_PACKAGE_NAME "jtdx-ik0xbx")
 #set (CPACK_PACKAGE_NAME JTDX)
 set (CPACK_PACKAGE_VERSION_MAJOR ${WSJTX_VERSION_MAJOR})
 set (CPACK_PACKAGE_VERSION_MINOR ${WSJTX_VERSION_MINOR})

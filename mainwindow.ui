@@ -1492,6 +1492,19 @@
                 </property>
                </widget>
               </item>
+              <item row="1" column="2">
+               <widget class="QComboBox" name="fixedReportComboBox">
+                <property name="maximumSize">
+                 <size>
+                  <width>110</width>
+                  <height>40</height>
+                 </size>
+                </property>
+                <property name="toolTip">
+                 <string>Select Auto to use the decoded signal report, or select a fixed report to use it for every transmitted report.</string>
+                </property>
+               </widget>
+              </item>
               <item row="4" column="2">
                <widget class="QPushButton" name="AutoSeqButton">
                 <property name="enabled">
@@ -2065,6 +2078,16 @@
                </widget>
               </item>
              </layout>
+            </item>
+            <item>
+             <widget class="QCheckBox" name="cbPersistentWanted">
+              <property name="toolTip">
+               <string>Automatically enable TX for callsigns and prefixes in the wanted lists, and keep calling the selected station until the QSO is logged. The Halt Tx button always stops transmission.</string>
+              </property>
+              <property name="text">
+               <string>Auto TX wanted call/prefix until logged</string>
+              </property>
+             </widget>
             </item>
             <item>
              <layout class="QHBoxLayout" name="horizontalLayout_23">

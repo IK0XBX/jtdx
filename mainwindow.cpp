@@ -358,6 +358,7 @@ MainWindow::MainWindow(bool multiple, QSettings * settings, QSharedMemory *shdme
   m_hisGrid {""},
   m_wantedCall {""}, m_wantedCountry {""}, m_wantedPrefix {""}, m_wantedGrid {""},
   m_wantedCallList {}, m_wantedCountryList {}, m_wantedPrefixList {}, m_wantedGridList {},
+  m_persistentWantedLoggedCalls {},
   m_appDir {QApplication::applicationDirPath ()},
   m_palette {"Linrad"},
   m_mode {"FT8"},
@@ -450,6 +451,14 @@ MainWindow::MainWindow(bool multiple, QSettings * settings, QSharedMemory *shdme
   m_manual {network_manager}
 {
   ui->setupUi(this);
+  {
+    QSignalBlocker const blocker {ui->fixedReportComboBox};
+    ui->fixedReportComboBox->addItem(tr("Report: Auto"));
+    for (int report = -50; report <= 49; ++report) {
+      auto const label = QString {"%1%2 dB"}.arg(report >= 0 ? "+" : "").arg(report);
+      ui->fixedReportComboBox->addItem(label, report);
+    }
+  }
   m_config.set_jtdxtime (m_jtdxtime);
   ui->decodedTextBrowser->setConfiguration (&m_config);
   ui->decodedTextBrowser2->setConfiguration (&m_config);
@@ -1202,6 +1211,10 @@ void MainWindow::writeSettings()
   m_settings->setValue("WantedCountryCommaList",ui->wantedCountry->text());
   m_settings->setValue("WantedPrefixCommaList",ui->wantedPrefix->text());
   m_settings->setValue("WantedGridCommaList",ui->wantedGrid->text());
+  m_settings->setValue("FixedTxReportEnabled",ui->fixedReportComboBox->currentIndex() > 0);
+  m_settings->setValue("FixedTxReportValue",ui->fixedReportComboBox->currentIndex() > 0
+                       ? ui->fixedReportComboBox->currentData().toInt() : ui->rptSpinBox->value());
+  m_settings->setValue("PersistentWanted",ui->cbPersistentWanted->isChecked());
   m_settings->setValue("FreeText",ui->freeTextMsg->currentText ());
   m_settings->setValue("ShowMenus",ui->cbMenus->isChecked());
   m_settings->setValue("ShowWanted",ui->cbShowWanted->isChecked());
@@ -1315,6 +1328,12 @@ void MainWindow::readSettings()
   ui->wantedCountry->setText(m_settings->value("WantedCountryCommaList","").toString());
   ui->wantedPrefix->setText(m_settings->value("WantedPrefixCommaList","").toString());
   ui->wantedGrid->setText(m_settings->value("WantedGridCommaList","").toString());
+  auto const fixedReport = qBound(-50, m_settings->value("FixedTxReportValue", -15).toInt(), 49);
+  auto const fixedReportIndex = ui->fixedReportComboBox->findData(fixedReport);
+  ui->fixedReportComboBox->setCurrentIndex(
+      m_settings->value("FixedTxReportEnabled", false).toBool() && fixedReportIndex > 0
+          ? fixedReportIndex : 0);
+  ui->cbPersistentWanted->setChecked(m_settings->value("PersistentWanted", false).toBool());
 
   if(m_settings->contains ("FreeText")) ui->freeTextMsg->setCurrentText (m_settings->value ("FreeText").toString ());
 
@@ -3444,7 +3463,7 @@ void MainWindow::process_Auto()
   bool counters2 = true;
   m_status = QsoHistory::NONE;
   QString hisCall = m_hisCall;
-  QString rpt = m_rpt;
+  QString rpt = selectedTxReport(m_rpt);
   QString grid = m_hisGrid;
   QString mode = "";
   unsigned time = 0;
@@ -3454,6 +3473,8 @@ void MainWindow::process_Auto()
   if (!hisCall.isEmpty ()) {
     if (m_houndMode) count = -1; //marker for changing status to FIN when status is RRR73
     m_status = m_qsoHistory.autoseq(hisCall,grid,rpt,rx,tx,time,count,prio,mode);
+    rpt = selectedTxReport(rpt);
+    bool const persistentWanted = isPersistentWanted(hisCall);
     if (m_transmitting) count -=1;
     if(m_config.write_decoded_debug()) {
       QString StrDirection = "";
@@ -3484,7 +3505,7 @@ void MainWindow::process_Auto()
       hisCall = m_hisCall;
       grid = m_hisGrid;
       m_status = QsoHistory::NONE;
-    } else if ((m_status == QsoHistory::RCQ || m_status == QsoHistory::SCALL || (m_status == QsoHistory::SREPORT && m_skipTx1 && !m_houndMode)) && m_config.answerCQCount() &&
+    } else if (!persistentWanted && (m_status == QsoHistory::RCQ || m_status == QsoHistory::SCALL || (m_status == QsoHistory::SREPORT && m_skipTx1 && !m_houndMode)) && m_config.answerCQCount() &&
         ((prio > 4 && prio < 17) || prio < 2 || m_strictdirCQ) && (m_config.nAnswerCQCounter() <= count || m_reply_other)) {
       clearDX (" cleared, RCQ/SCALL/SREPORT count reached");
       if (m_reply_other)
@@ -3499,7 +3520,7 @@ void MainWindow::process_Auto()
       m_status = QsoHistory::NONE;
       if (m_singleshot)
         counters = false;
-    } else if ((m_status == QsoHistory::RCALL || (m_status == QsoHistory::SREPORT && !m_skipTx1)) && m_config.answerInCallCount() && 
+    } else if (!persistentWanted && (m_status == QsoHistory::RCALL || (m_status == QsoHistory::SREPORT && !m_skipTx1)) && m_config.answerInCallCount() &&
         (m_config.nAnswerInCallCounter() <= count || m_reply_other)) {
       clearDX (" cleared, RCALL/SREPORT count reached");
       m_qsoHistory.calllist(hisCall,rpt.toInt(),time);
@@ -3510,7 +3531,7 @@ void MainWindow::process_Auto()
       counters2 = false;
       if (m_singleshot)
         counters = false;
-    } else if ((m_status == QsoHistory::RREPORT || m_status == QsoHistory::SRREPORT) && m_config.sentRReportCount() && 
+    } else if (!persistentWanted && (m_status == QsoHistory::RREPORT || m_status == QsoHistory::SRREPORT) && m_config.sentRReportCount() &&
         m_config.nSentRReportCounter() <= count) {
       clearDX (" cleared, RREPORT/SRREPORT count reached");
       count = m_qsoHistory.reset_count(hisCall);
@@ -3520,7 +3541,7 @@ void MainWindow::process_Auto()
       counters2 = false;
       if (m_singleshot)
         counters = false;
-    } else if ((m_status == QsoHistory::RRR || m_status == QsoHistory::RRR73 || m_status == QsoHistory::R73 || m_status == QsoHistory::SRR73 || m_status == QsoHistory::S73) && 
+    } else if (!persistentWanted && (m_status == QsoHistory::RRR || m_status == QsoHistory::RRR73 || m_status == QsoHistory::R73 || m_status == QsoHistory::SRR73 || m_status == QsoHistory::S73) &&
         m_config.sentRR7373Count() && m_config.nSentRR7373Counter() <= count) {
       clearDX (" cleared, RRR|RR73|R73 count reached");
       count = m_qsoHistory.reset_count(hisCall);
@@ -3544,6 +3565,7 @@ void MainWindow::process_Auto()
     if (m_rprtPriority) time |= 16;
     if (m_maxDistance) time |= 32;
     m_status = m_qsoHistory.autoseq(hisCall,grid,rpt,rx,tx,time,count,prio,mode);
+    rpt = selectedTxReport(rpt);
     if(m_config.write_decoded_debug()) {
       QString StrDirection = "";
       if(m_status == QsoHistory::FIN) StrDirection = " auto sequence is finished;";
@@ -3571,6 +3593,7 @@ void MainWindow::process_Auto()
       ui->TxFreqSpinBox->setValue (rx);
       }
       if (!rpt.isEmpty () && rpt == m_rpt) m_rpt = "-60";
+      if (isPersistentWanted(hisCall) && !m_enableTx) enableTx_mode(true);
     } else  if (m_transmittedQSOProgress != CALLING){
         on_txb6_clicked();
         if(ui->tabWidget->currentIndex()==1) ui->genMsg->setText(ui->tx6->text());
@@ -5016,7 +5039,7 @@ void MainWindow::processMessage(QString const& messages, int position, bool alt,
       qDebug () << "Not processing message - hiscall:" << hiscall << "hisgrid:" << hisgrid;
 //SNR from free messages to report for operation with special callsigns in the manual mode
 	  if (!m_autoseq) {
-         QString rpt = decodedtext.report();
+         QString rpt = selectedTxReport(decodedtext.report());
          ui->rptSpinBox->setValue(rpt.toInt());
          genStdMsgs(rpt);
       }
@@ -5142,7 +5165,7 @@ void MainWindow::processMessage(QString const& messages, int position, bool alt,
   if (m_hisGrid.isEmpty ())
     lookup();
 
-  QString rpt = decodedtext.report();
+  QString rpt = selectedTxReport(decodedtext.report());
   ui->rptSpinBox->setValue(rpt.toInt());
   genStdMsgs(rpt);
 
@@ -5342,6 +5365,7 @@ void MainWindow::genCQMsg ()
 
 void MainWindow::genStdMsgs(QString rpt)                       //genStdMsgs()
 {
+  rpt = selectedTxReport(rpt);
   if(!m_autoseq && m_wasAutoSeq) { m_wasAutoSeq=false; on_AutoSeqButton_clicked(true); }
   QString myrpt,t;
   m_txGenerated = m_txFirst;
@@ -6051,6 +6075,8 @@ void MainWindow::acceptQSO2(QDateTime const& QSO_date_off, QString const& call, 
                             , QString const& eqslcomments, QByteArray const& myadif2)
 {
   QString date = QSO_date_on.toString("yyyyMMdd");
+  bool const persistentWantedCompleted = isPersistentWanted(call);
+  m_persistentWantedLoggedCalls.insert(call.trimmed().toUpper());
   m_qsoLogged=true;
   m_logBook.addAsWorked (call, m_config.bands ()->find (dial_freq), mode, date, grid, name);
   QString operator_call = m_config.my_callsign(); QString my_call = m_config.my_callsign(); QString my_grid = m_config.my_grid();
@@ -6088,6 +6114,8 @@ void MainWindow::acceptQSO2(QDateTime const& QSO_date_off, QString const& call, 
     }
   }
   if (m_houndMode && !m_hisCall.isEmpty()) { clearDX (" cleared: QSO logged in DXpedition mode"); ui->dxCallEntry->setStyleSheet(QString("QLineEdit {color: %1; background: %2}").arg(Radio::convert_dark("#000000",m_useDarkStyle),Radio::convert_dark("#ffffff",m_useDarkStyle))); }
+  if (persistentWantedCompleted && !m_houndMode)
+    autoStopTx("Wanted station logged ");
 }
 
 void MainWindow::on_actionJT9_triggered()
@@ -6845,6 +6873,43 @@ void MainWindow::on_rptSpinBox_valueChanged(int n)
   else if(m_ntx==5) { ui->txrb5->setChecked(true); }
   else if(m_ntx==6) { ui->txrb6->setChecked(true); }
   statusChanged();
+}
+
+void MainWindow::on_fixedReportComboBox_currentIndexChanged(int index)
+{
+  bool const fixed = index > 0;
+  ui->rptSpinBox->setEnabled(!fixed);
+  if (fixed) {
+    auto const report = ui->fixedReportComboBox->itemData(index).toInt();
+    if (ui->rptSpinBox->value() != report) ui->rptSpinBox->setValue(report);
+    else genStdMsgs(QString::number(report));
+  } else {
+    genStdMsgs(m_rpt);
+  }
+}
+
+QString MainWindow::selectedTxReport(QString const& decodedReport) const
+{
+  if (ui->fixedReportComboBox->currentIndex() > 0)
+    return QString::number(ui->fixedReportComboBox->currentData().toInt());
+  return decodedReport;
+}
+
+bool MainWindow::isPersistentWanted(QString const& callsign) const
+{
+  if (!ui->cbPersistentWanted->isChecked() || callsign.isEmpty()) return false;
+
+  auto const normalizedCall = callsign.trimmed().toUpper();
+  if (m_persistentWantedLoggedCalls.contains(normalizedCall)) return false;
+
+  auto const baseCall = Radio::base_callsign(normalizedCall);
+  if (m_wantedCallList.contains(normalizedCall) || m_wantedCallList.contains(baseCall)) return true;
+
+  for (auto const& prefix : m_wantedPrefixList) {
+    auto const normalizedPrefix = prefix.trimmed().toUpper();
+    if (normalizedPrefix.size() > 1 && normalizedCall.startsWith(normalizedPrefix)) return true;
+  }
+  return false;
 }
 
 void MainWindow::on_tuneButton_clicked (bool checked)
@@ -8042,7 +8107,7 @@ void MainWindow::on_cbShowWanted_toggled(bool b)
   m_wantedchkd=b;
   ui->labWantCall->setVisible(b); ui->wantedCall->setVisible(b); ui->labWantCountry->setVisible(b); ui->wantedCountry->setVisible(b);
   ui->labWantPfx->setVisible(b); ui->wantedPrefix->setVisible(b); ui->labWantGrid->setVisible(b); ui->wantedGrid->setVisible(b);
-  ui->cbClearCallsign->setVisible(b); ui->cbClearGrid->setVisible(b); dynamicButtonsInit();
+  ui->cbClearCallsign->setVisible(b); ui->cbClearGrid->setVisible(b); ui->cbPersistentWanted->setVisible(b); dynamicButtonsInit();
 }
 
 void MainWindow::on_cbShowSpot_toggled(bool b) 
