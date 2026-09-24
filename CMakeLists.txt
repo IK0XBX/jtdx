@@ -1187,7 +1187,6 @@ generate_version_info (jtdx_VERSION_RESOURCES
 add_executable (jtdx MACOSX_BUNDLE
   ${wsjtx_CXXSRCS}
   ${wsjtx_GENUISRCS}
-  jtdx.rc
   ${WSJTX_ICON_FILE}
   ${wsjtx_RESOURCES_RCC}
   ${jtdx_VERSION_RESOURCES}
