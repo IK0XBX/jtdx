@@ -63,14 +63,15 @@ foreach (_comp ${_components})
   endif (_comp STREQUAL "single")
 endforeach (_comp ${_components})
 
-# If using threads, we need to link against threaded libraries as well - except on Windows.
-if (NOT WIN32 AND _use_threads)
+# MinGW packages the threaded FFTW entry points in separate libraries just as
+# Unix platforms do.  Only native MSVC builds use the historical Windows path.
+if (_use_threads AND (NOT WIN32 OR MINGW))
   set (_thread_libs)
   foreach (_lib ${_libraries})
     list (APPEND _thread_libs ${_lib}_threads)
   endforeach (_lib ${_libraries})
   set (_libraries ${_thread_libs} ${_libraries})
-endif (NOT WIN32 AND _use_threads)
+endif ()
 
 # Keep a list of variable names that we need to pass on to
 # find_package_handle_standard_args().
